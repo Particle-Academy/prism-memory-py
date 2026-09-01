@@ -143,7 +143,19 @@ class Vector:
 
             parsed.append(component)
 
-        return cls(parsed)
+        vector = cls(parsed)
+
+        # Scorability is asserted HERE, on the write path, not lazily at the
+        # first comparison. The reference does the same and the difference is
+        # not cosmetic: a degenerate vector that is only rejected when something
+        # scores against it has already been WRITTEN to a shared store, and
+        # every recall that later touches that row raises instead of returning
+        # results. Failing at construction puts the error where the caller can
+        # still do something about it -- it has the embedding, and it knows
+        # which document produced it.
+        vector._squares()
+
+        return vector
 
     def to_storage(self) -> str:
         """The stored form: base64 of little-endian float64s."""
